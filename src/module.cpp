@@ -15,6 +15,7 @@ struct ValueEncoder
         std::fill(inverse_mapping.begin(), inverse_mapping.end(), -1);
         classes_ = characters;
         sort(classes_.begin(), classes_.end());
+        classes_.erase(unique(classes_.begin(), classes_.end()), classes_.end());
 
         for (size_t i = 0; i < classes_.size(); i++)
         {

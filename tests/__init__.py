@@ -29,3 +29,10 @@ class ValueEncoderTestCases(unittest.TestCase):
 
         with self.assertRaisesRegexp(ValueError, 'invalid character: 5'):
             encoder.inverse_transform([0, 0, 5])
+
+    def test_fit_duplicates(self):
+        encoder = ValueEncoder()
+        encoder.fit('abceda')
+        self.assertEqual(encoder.classes_, 'abcde')
+        encoded = encoder.transform('aabec')
+        np.testing.assert_array_equal(encoded, [0, 0, 1, 4, 2])
