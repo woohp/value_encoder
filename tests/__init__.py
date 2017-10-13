@@ -6,7 +6,9 @@ from value_encoder import ValueEncoder
 class ValueEncoderTestCases(unittest.TestCase):
     def test_basic(self):
         encoder = ValueEncoder()
-        encoder.fit('abcde')
+        encoder.fit('abced')
+        self.assertEqual(encoder.classes_, 'abcde')
+
         encoded = encoder.transform('aabec')
         self.assertEqual(encoded.dtype, np.uint8)
         np.testing.assert_array_equal(encoded, [0, 0, 1, 4, 2])

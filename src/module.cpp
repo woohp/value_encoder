@@ -9,16 +9,17 @@ namespace py = pybind11;
 
 struct ValueEncoder
 {
-    ValueEncoder& fit(string characters)
+    ValueEncoder& fit(const string& characters)
     {
         std::fill(mapping.begin(), mapping.end(), -1);
         std::fill(inverse_mapping.begin(), inverse_mapping.end(), -1);
-        sort(characters.begin(), characters.end());
+        classes_ = characters;
+        sort(classes_.begin(), classes_.end());
 
-        for (size_t i = 0; i < characters.size(); i++)
+        for (size_t i = 0; i < classes_.size(); i++)
         {
-            mapping[characters[i]] = i;
-            inverse_mapping[i] = characters[i];
+            mapping[classes_[i]] = i;
+            inverse_mapping[i] = classes_[i];
         }
 
         return *this;
@@ -64,6 +65,7 @@ struct ValueEncoder
         return out;
     }
 
+    string classes_;
     array<char, 128> mapping;
     array<char, 128> inverse_mapping;
 };
@@ -75,6 +77,7 @@ PYBIND11_MODULE(value_encoder, m)
 
     py::class_<ValueEncoder>(m, "ValueEncoder")
         .def(py::init<>())
+        .def_readonly("classes_", &ValueEncoder::classes_)
         .def("fit", &ValueEncoder::fit, "characters"_a)
         .def("transform", &ValueEncoder::transform, "characters"_a)
         .def("fit_transform", &ValueEncoder::fit_transform, "characters"_a)
