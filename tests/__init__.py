@@ -24,8 +24,10 @@ class ValueEncoderTestCases(unittest.TestCase):
     def test_error(self):
         encoder = ValueEncoder()
         encoder.fit('abcde')
-        with self.assertRaisesRegexp(ValueError, 'invalid character: f'):
+        with self.assertRaisesRegexp(ValueError, 'invalid character: "abcf"'):
             encoder.transform('abcf')
+        with self.assertRaisesRegexp(ValueError, 'invalid character: "abc\t"'):
+            encoder.transform('abc\t')
 
         with self.assertRaisesRegexp(ValueError, 'invalid character: 5'):
             encoder.inverse_transform([0, 0, 5])

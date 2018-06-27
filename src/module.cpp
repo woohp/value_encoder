@@ -1,8 +1,9 @@
 #include <algorithm>
-#include <string>
 #include <array>
-#include <pybind11/pybind11.h>
+#include <iomanip>
 #include <pybind11/numpy.h>
+#include <pybind11/pybind11.h>
+#include <sstream>
 using namespace std;
 namespace py = pybind11;
 
@@ -35,7 +36,11 @@ struct ValueEncoder
         {
             auto mapped_character = mapping[characters[i]];
             if (mapped_character < 0)
-                throw std::invalid_argument("invalid character: "s + characters[i]);
+            {
+                stringstream ss;
+                ss << "invalid character: " << quoted(characters);
+                throw std::invalid_argument(ss.str());
+            }
             result_ptr[i] = mapped_character;
         }
 

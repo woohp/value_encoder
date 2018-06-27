@@ -56,10 +56,13 @@ setup(
     description="Value encoder",
     author="Captricity",
     author_email="huipengh@captricity.com",
-
     ext_modules=extension,
+    packages=['value_encoder-stubs'],
+    package_data={
+        'value_encoder-stubs': ['__init__.pyi'],
+    },
+    include_package_data=True,
     test_suite="tests",
-
     install_requires=['pybind11>=2.2.1'],
     cmdclass={'build_ext': BuildExt},
     zip_safe=False,
