@@ -27,9 +27,9 @@ struct ValueEncoder
         return *this;
     }
 
-    py::array_t<unsigned char> transform(const string& characters)
+    py::array_t<unsigned char> transform(const string& characters, bool cap)
     {
-        py::array_t<unsigned char> result(characters.size());
+        py::array_t<unsigned char> result(characters.size() + cap);
         unsigned char* result_ptr = reinterpret_cast<unsigned char*>(result.request().ptr);
 
         for (size_t i = 0; i < characters.size(); i++)
@@ -44,13 +44,16 @@ struct ValueEncoder
             result_ptr[i] = mapped_character;
         }
 
+        if (cap)
+            result_ptr[characters.size()] = this->classes_.size();
+
         return result;
     }
 
-    py::array_t<unsigned char> fit_transform(const string& characters)
+    py::array_t<unsigned char> fit_transform(const string& characters, bool cap)
     {
         fit(characters);
-        return transform(characters);
+        return transform(characters, cap);
     }
 
     string inverse_transform(py::array_t<unsigned char, py::array::c_style | py::array::forcecast> value)
@@ -85,8 +88,8 @@ PYBIND11_MODULE(value_encoder, m)
         .def(py::init<>())
         .def_readonly("classes_", &ValueEncoder::classes_)
         .def("fit", &ValueEncoder::fit, "characters"_a)
-        .def("transform", &ValueEncoder::transform, "characters"_a)
-        .def("fit_transform", &ValueEncoder::fit_transform, "characters"_a)
+        .def("transform", &ValueEncoder::transform, "characters"_a, "cap"_a = false)
+        .def("fit_transform", &ValueEncoder::fit_transform, "characters"_a, "cap"_a = false)
         .def("inverse_transform", &ValueEncoder::inverse_transform, "value"_a);
 
 #ifdef VERSION_INFO
