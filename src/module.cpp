@@ -3,14 +3,16 @@
 #include <iomanip>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 #include <sstream>
+#include <string_view>
 using namespace std;
 namespace py = pybind11;
 
 
 struct ValueEncoder
 {
-    ValueEncoder& fit(const string& characters)
+    ValueEncoder& fit(string_view characters)
     {
         std::fill(mapping.begin(), mapping.end(), -1);
         std::fill(inverse_mapping.begin(), inverse_mapping.end(), -1);
@@ -27,10 +29,10 @@ struct ValueEncoder
         return *this;
     }
 
-    py::array_t<unsigned char> transform(const string& characters, bool cap)
+    py::array_t<char> transform(string_view characters, bool cap)
     {
-        py::array_t<unsigned char> result(characters.size() + cap);
-        unsigned char* result_ptr = reinterpret_cast<unsigned char*>(result.request().ptr);
+        py::array_t<char> result(characters.size() + cap);
+        char* result_ptr = reinterpret_cast<char*>(result.request().ptr);
 
         for (size_t i = 0; i < characters.size(); i++)
         {
@@ -38,7 +40,7 @@ struct ValueEncoder
             if (mapped_character < 0)
             {
                 stringstream ss;
-                ss << "invalid character: " << quoted(characters);
+                ss << "invalid character: " << quoted(string { characters });
                 throw std::invalid_argument(ss.str());
             }
             result_ptr[i] = mapped_character;
@@ -50,16 +52,41 @@ struct ValueEncoder
         return result;
     }
 
-    py::array_t<unsigned char> fit_transform(const string& characters, bool cap)
+    py::array_t<char> transform(const vector<string_view>& values, int missing_value, bool cap)
     {
-        fit(characters);
-        return transform(characters, cap);
+        int max_length = 0;
+        for (const auto& value : values)
+            max_length = std::max<int>(max_length, value.length());
+        py::array_t<char> result({ static_cast<int>(values.size()), max_length + cap });
+        std::fill_n(reinterpret_cast<char*>(result.request().ptr), result.nbytes(), missing_value);
+        auto result_a = result.mutable_unchecked<2>();
+
+        for (size_t batch_idx = 0; batch_idx < values.size(); batch_idx++)
+        {
+            const auto& value = values[batch_idx];
+            for (size_t i = 0; i < value.size(); i++)
+            {
+                auto mapped_character = mapping[value[i]];
+                if (mapped_character < 0)
+                {
+                    stringstream ss;
+                    ss << "invalid character: " << quoted(string { value });
+                    throw std::invalid_argument(ss.str());
+                }
+                result_a(batch_idx, i) = mapped_character;
+            }
+
+            if (cap)
+                result_a(batch_idx, value.size()) = this->classes_.size();
+        }
+
+        return result;
     }
 
-    string inverse_transform(py::array_t<unsigned char, py::array::c_style | py::array::forcecast> value)
+    string inverse_transform(py::array_t<char, py::array::c_style | py::array::forcecast> value)
     {
         py::buffer_info info = value.request();
-        unsigned char* ptr = reinterpret_cast<unsigned char*>(info.ptr);
+        char* ptr = reinterpret_cast<char*>(info.ptr);
 
         string out;
         out.reserve(info.shape[0]);
@@ -88,8 +115,13 @@ PYBIND11_MODULE(value_encoder, m)
         .def(py::init<>())
         .def_readonly("classes_", &ValueEncoder::classes_)
         .def("fit", &ValueEncoder::fit, "characters"_a)
-        .def("transform", &ValueEncoder::transform, "characters"_a, "cap"_a = false)
-        .def("fit_transform", &ValueEncoder::fit_transform, "characters"_a, "cap"_a = false)
+        .def("transform", py::overload_cast<string_view, bool>(&ValueEncoder::transform), "value"_a, "cap"_a = false)
+        .def(
+            "transform",
+            py::overload_cast<const vector<string_view>&, int, bool>(&ValueEncoder::transform),
+            "values"_a,
+            "missing_value"_a = -1,
+            "cap"_a = false)
         .def("inverse_transform", &ValueEncoder::inverse_transform, "value"_a);
 
 #ifdef VERSION_INFO

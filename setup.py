@@ -40,7 +40,7 @@ class BuildExt(build_ext):
     def build_extensions(self):
         opts = [
             '-DVERSION_INFO="%s"' % self.distribution.get_version(),
-            '-std=c++14',
+            '-std=c++1z',
             '-fvisibility=hidden',
         ]
         if sys.platform == 'darwin':
