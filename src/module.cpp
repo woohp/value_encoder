@@ -9,6 +9,9 @@
 using namespace std;
 namespace py = pybind11;
 
+#define STRINGIFY(x) #x
+#define MACRO_STRINGIFY(x) STRINGIFY(x)
+
 
 struct ValueEncoder
 {
@@ -125,6 +128,6 @@ PYBIND11_MODULE(value_encoder, m)
         .def("inverse_transform", &ValueEncoder::inverse_transform, "value"_a);
 
 #ifdef VERSION_INFO
-    m.attr("__version__") = VERSION_INFO;
+    m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
 #endif
 }
