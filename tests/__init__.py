@@ -9,7 +9,7 @@ class ValueEncoderTestCases(unittest.TestCase):
         self.assertEqual(encoder.classes_, 'abcde')
 
         encoded = encoder.transform('aabec')
-        self.assertEqual(encoded.dtype, np.int8)
+        self.assertEqual(encoded.dtype, np.int16)
         np.testing.assert_array_equal(encoded, [0, 0, 1, 4, 2])
 
         decoded = encoder.inverse_transform(encoded)

@@ -15,11 +15,11 @@ namespace py = pybind11;
 
 struct ValueEncoder
 {
-    ValueEncoder& fit(string_view characters)
+    ValueEncoder& fit(string characters)
     {
         std::fill(mapping.begin(), mapping.end(), -1);
         std::fill(inverse_mapping.begin(), inverse_mapping.end(), -1);
-        classes_ = characters;
+        classes_ = std::move(characters);
         sort(classes_.begin(), classes_.end());
         classes_.erase(unique(classes_.begin(), classes_.end()), classes_.end());
 
@@ -32,10 +32,10 @@ struct ValueEncoder
         return *this;
     }
 
-    py::array_t<char> transform(string_view characters, bool cap)
+    py::array_t<int16_t> transform(string_view characters, bool cap)
     {
-        py::array_t<char> result(characters.size() + cap);
-        char* result_ptr = reinterpret_cast<char*>(result.request().ptr);
+        py::array_t<int16_t> result(characters.size() + cap);
+        int16_t* result_ptr = reinterpret_cast<int16_t*>(result.request().ptr);
 
         for (size_t i = 0; i < characters.size(); i++)
         {
@@ -55,13 +55,13 @@ struct ValueEncoder
         return result;
     }
 
-    py::array_t<char> transform(const vector<string_view>& values, int missing_value, bool cap)
+    py::array_t<int16_t> transform(const vector<string_view>& values, int missing_value, bool cap)
     {
         int max_length = 0;
         for (const auto& value : values)
             max_length = std::max<int>(max_length, value.length());
-        py::array_t<char> result({ static_cast<int>(values.size()), max_length + cap });
-        std::fill_n(reinterpret_cast<char*>(result.request().ptr), result.nbytes(), missing_value);
+        py::array_t<int16_t> result({ static_cast<int>(values.size()), max_length + cap });
+        std::fill_n(reinterpret_cast<int16_t*>(result.request().ptr), result.size(), missing_value);
         auto result_a = result.mutable_unchecked<2>();
 
         for (size_t batch_idx = 0; batch_idx < values.size(); batch_idx++)
@@ -86,10 +86,10 @@ struct ValueEncoder
         return result;
     }
 
-    string inverse_transform(py::array_t<char, py::array::c_style | py::array::forcecast> value)
+    string inverse_transform(py::array_t<int16_t, py::array::c_style | py::array::forcecast> value)
     {
         py::buffer_info info = value.request();
-        char* ptr = reinterpret_cast<char*>(info.ptr);
+        int16_t* ptr = reinterpret_cast<int16_t*>(info.ptr);
 
         string out;
         out.reserve(info.shape[0]);
@@ -105,8 +105,8 @@ struct ValueEncoder
     }
 
     string classes_;
-    array<char, 128> mapping;
-    array<char, 128> inverse_mapping;
+    array<int16_t, 256> mapping;
+    array<int16_t, 256> inverse_mapping;
 };
 
 
